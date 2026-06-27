@@ -1,0 +1,29 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "schedule": ["once a week"],
+  "autoApprove": true,
+  "automerge": true,
+  "automergeType": "pr",
+  "platformAutomerge": true,
+  "pre-commit": {
+    "fileMatch": ["(^|/)config/\\.pre-commit-config\\.yaml$"]
+  },
+  "regexManagers": [
+    {
+      "fileMatch": ["\\.github/workflows/pre-commit\\.yml$"],
+      "matchStrings": [
+        "https://github\\.com/(?<depName>[^/]+/[^/]+)/releases/download/v(?<currentValue>[\\d.]+)/"
+      ],
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "fileMatch": ["\\.github/workflows/pre-commit\\.yml$"],
+      "matchStrings": [
+        "pip install pre-commit==(?<currentValue>[\\d.]+)"
+      ],
+      "depNameTemplate": "pre-commit",
+      "datasourceTemplate": "pypi"
+    }
+  ]
+}
