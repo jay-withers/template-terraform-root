@@ -60,7 +60,7 @@ jobs:
             | tar -xz -C /usr/local/bin gitleaks
 
       - name: Install pre-commit
-        run: pip install pre-commit==3.8.0
+        run: pip install pre-commit==4.6.0
 
       - name: Cache pre-commit envs
         uses: actions/cache@v6
