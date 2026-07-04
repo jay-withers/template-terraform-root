@@ -12,8 +12,25 @@
     {
       "fileMatch": ["\\.github/workflows/ci-pre-commit\\.yml$"],
       "matchStrings": [
-        "https://github\\.com/(?<depName>[^/]+/[^/]+)/releases/download/v(?<currentValue>[\\d.]+)/"
+        "TERRAFORM_DOCS_VERSION: (?<currentValue>[\\d.]+)"
       ],
+      "depNameTemplate": "terraform-docs/terraform-docs",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "fileMatch": ["\\.github/workflows/ci-pre-commit\\.yml$"],
+      "matchStrings": [
+        "ACTIONLINT_VERSION: (?<currentValue>[\\d.]+)"
+      ],
+      "depNameTemplate": "rhysd/actionlint",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "fileMatch": ["\\.github/workflows/ci-pre-commit\\.yml$"],
+      "matchStrings": [
+        "GITLEAKS_VERSION: (?<currentValue>[\\d.]+)"
+      ],
+      "depNameTemplate": "gitleaks/gitleaks",
       "datasourceTemplate": "github-releases"
     },
     {

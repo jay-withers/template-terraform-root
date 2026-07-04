@@ -41,8 +41,10 @@ jobs:
         run: tflint --init --config "$GITHUB_WORKSPACE/terraform/.tflint.hcl"
 
       - name: Install terraform-docs
+        env:
+          TERRAFORM_DOCS_VERSION: 0.24.0
         run: |
-          curl -fsSL https://github.com/terraform-docs/terraform-docs/releases/download/v0.24.0/terraform-docs-v0.24.0-linux-amd64.tar.gz \
+          curl -fsSL "https://github.com/terraform-docs/terraform-docs/releases/download/v${TERRAFORM_DOCS_VERSION}/terraform-docs-v${TERRAFORM_DOCS_VERSION}-linux-amd64.tar.gz" \
             | tar -xz -C /usr/local/bin terraform-docs
           chmod +x /usr/local/bin/terraform-docs
 
@@ -50,13 +52,17 @@ jobs:
         run: pip install checkov==3.3.6
 
       - name: Install actionlint
+        env:
+          ACTIONLINT_VERSION: 1.7.12
         run: |
-          curl -fsSL https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz \
+          curl -fsSL "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" \
             | tar -xz -C /usr/local/bin actionlint
 
       - name: Install gitleaks
+        env:
+          GITLEAKS_VERSION: 8.30.0
         run: |
-          curl -fsSL https://github.com/gitleaks/gitleaks/releases/download/v8.30.0/gitleaks_8.30.0_linux_x64.tar.gz \
+          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
             | tar -xz -C /usr/local/bin gitleaks
 
       - name: Install pre-commit
