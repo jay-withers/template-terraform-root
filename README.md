@@ -82,6 +82,17 @@ them (e.g. `outputs.network.tf`, `locals.network.tf`), via the local
 pre-commit hook `check-tf-file-layout` (`scripts/check-tf-file-layout.sh`).
 `main.tf` is left for resources, data sources, and module blocks.
 
+## Linting against every environment
+
+`make lint` runs TFLint and Checkov once per file in `terraform/environments/`
+(via `scripts/tflint-per-env.sh` and `scripts/checkov-per-env.sh`, wired in as
+local pre-commit hooks) rather than once with unresolved variables. Passing
+each environment's real `-var-file` gives rules that depend on concrete
+values — resource naming, tags, region-specific checks — something to
+actually evaluate. Both scripts glob `terraform/environments/*.tfvars` at
+run time, so adding a new environment's tfvars file is enough to get it
+linted — no `.pre-commit-config.yaml` change needed.
+
 ## Tags and resource protection
 
 The module applies default tags (`environment`, `managed-by = "terraform"`) to
@@ -193,5 +204,7 @@ renovate.json          # automated dependency updates
 scripts/
   configure-github.sh       # one-time GitHub settings (auto-merge, branch protection)
   check-tf-file-layout.sh   # pre-commit hook: enforces locals/variables/outputs file layout
+  tflint-per-env.sh         # pre-commit hook: tflint once per terraform/environments/*.tfvars
+  checkov-per-env.sh        # pre-commit hook: checkov once per terraform/environments/*.tfvars
 Makefile
 ```

@@ -97,7 +97,7 @@ Commits must follow [Conventional Commits](https://www.conventionalcommits.org/)
 
 ## Pre-commit config
 
-Hooks are in `.pre-commit-config.yaml` at the repo root. The `no-commit-to-branch` hook blocks direct commits to `main`. Terraform hooks come from `antonbabenko/pre-commit-terraform`; the TFLint hook reads `terraform/.tflint.hcl`. The one local hook, `check-tf-file-layout` (`scripts/check-tf-file-layout.sh`), enforces the locals/variables/outputs file-layout convention described above.
+Hooks are in `.pre-commit-config.yaml` at the repo root. The `no-commit-to-branch` hook blocks direct commits to `main`. `terraform_fmt`/`terraform_validate`/`terraform_docs` come from `antonbabenko/pre-commit-terraform`. TFLint and Checkov are run by local hooks instead of that repo's `terraform_tflint`/`terraform_checkov`: `scripts/tflint-per-env.sh` and `scripts/checkov-per-env.sh` each glob `terraform/environments/*.tfvars` and run their tool once per environment with `--var-file`, so rules that depend on concrete variable values (naming, tags, region-specific checks) are evaluated against what each environment actually deploys — dropping a new environment's tfvars in `terraform/environments/` picks it up automatically, no config change needed. The other local hook, `check-tf-file-layout` (`scripts/check-tf-file-layout.sh`), enforces the locals/variables/outputs file-layout convention described above.
 
 ## CI
 
