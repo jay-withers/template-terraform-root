@@ -1,4 +1,3 @@
-CONFIG := config/.pre-commit-config.yaml
 TF_DIR := terraform
 
 .DEFAULT_GOAL := help
@@ -10,11 +9,11 @@ help: ## Show this help
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
 
 install: ## Install pre-commit hooks (run once after cloning)
-	pre-commit install --config $(CONFIG)
-	pre-commit install --hook-type commit-msg --config $(CONFIG)
+	pre-commit install
+	pre-commit install --hook-type commit-msg
 
 lint: ## Run all pre-commit hooks against every file
-	pre-commit run --all-files --config $(CONFIG)
+	pre-commit run --all-files
 
 init: ## terraform init
 	terraform -chdir=$(TF_DIR) init

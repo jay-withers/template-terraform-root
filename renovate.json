@@ -1,13 +1,12 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
-  "schedule": ["once a week"],
+  "extends": ["config:recommended", "schedule:weekly"],
   "autoApprove": true,
   "automerge": true,
   "automergeType": "pr",
   "platformAutomerge": true,
   "pre-commit": {
-    "fileMatch": ["(^|/)config/\\.pre-commit-config\\.yaml$"]
+    "fileMatch": ["(^|/)\\.pre-commit-config\\.yaml$"]
   },
   "regexManagers": [
     {
