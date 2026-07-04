@@ -48,7 +48,7 @@ make configure-github  # configure GitHub repo settings (auto-merge, branch prot
 make lint              # run all pre-commit hooks against every file
 make fmt               # terraform fmt -recursive
 make validate          # terraform init + validate
-make plan              # terraform init + plan
+make plan              # terraform init + plan (set ENV=dev|stg|prd, default dev)
 make test              # terraform test (mocked azurerm provider — no Azure auth)
 ```
 

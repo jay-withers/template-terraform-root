@@ -26,7 +26,7 @@ make configure-github  # configure GitHub repo settings (auto-merge, branch prot
 make lint              # run all pre-commit hooks against every file
 make fmt               # terraform fmt -recursive
 make validate          # terraform init + validate
-make plan              # terraform init + plan
+make plan              # terraform init + plan (set ENV=dev|stg|prd, default dev)
 make test              # terraform test (mocked azurerm provider — no Azure auth needed)
 ```
 
@@ -42,8 +42,17 @@ credentials. Add `assert` blocks as the module grows.
 ## Environments
 
 `terraform/environments/{dev,stg,prd}.tfvars` hold per-environment inputs for
-`terraform/examples/basic/` (or any other root config you add). Select one with
-`-var-file`, relative to the config's own directory:
+the module and for root configs like `terraform/examples/basic/`. `make plan`
+picks one via `ENV` (default `dev`):
+
+```bash
+make plan            # plans terraform/ with environments/dev.tfvars
+make plan ENV=stg    # plans terraform/ with environments/stg.tfvars
+make plan ENV=prd    # plans terraform/ with environments/prd.tfvars
+```
+
+Planning a different root config (e.g. the example) directly needs a
+`-var-file` path relative to *that* config's own directory:
 
 ```bash
 terraform -chdir=terraform/examples/basic plan -var-file=../../environments/dev.tfvars
