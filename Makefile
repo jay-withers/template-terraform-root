@@ -1,8 +1,10 @@
 TF_DIR := terraform
+EXAMPLE_DIR := $(TF_DIR)/examples/basic
+ENV ?= dev
 
 .DEFAULT_GOAL := help
 
-.PHONY: help install lint init fmt validate plan test
+.PHONY: help install configure-github lint init fmt validate plan test
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -11,6 +13,9 @@ help: ## Show this help
 install: ## Install pre-commit hooks (run once after cloning)
 	pre-commit install
 	pre-commit install --hook-type commit-msg
+
+configure-github: ## Configure GitHub repo settings for a template-derived repo (auto-merge, branch protection) via gh CLI
+	./scripts/configure-github.sh
 
 lint: ## Run all pre-commit hooks against every file
 	pre-commit run --all-files
@@ -24,8 +29,9 @@ fmt: ## terraform fmt -recursive
 validate: init ## terraform init + validate
 	terraform -chdir=$(TF_DIR) validate
 
-plan: init ## terraform init + plan
-	terraform -chdir=$(TF_DIR) plan
+plan: ## terraform init + plan against the basic example (set ENV=dev|stg|prd, default dev)
+	terraform -chdir=$(EXAMPLE_DIR) init
+	terraform -chdir=$(EXAMPLE_DIR) plan -var-file=../../environments/$(ENV).tfvars
 
 test: init ## terraform test (mocked azurerm provider — no Azure auth)
 	terraform -chdir=$(TF_DIR) test

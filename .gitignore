@@ -9,9 +9,10 @@
 crash.log
 crash.*.log
 
-# Variable definition files that may contain secrets
-*.tfvars
-*.tfvars.json
+# *.tfvars files are committed intentionally (dev/stg/prd environment inputs —
+# see terraform/examples/basic/*.tfvars). Do not put secrets in them; use Azure
+# Key Vault, GitHub Actions secrets, or ARM_* environment variables instead.
+# gitleaks (pre-commit and CI) scans every commit as a backstop.
 
 # CLI configuration and override files
 .terraformrc

@@ -58,13 +58,20 @@ jobs:
       - name: Terraform test
         run: terraform test -no-color
 
-  # Plans the basic example against Azure using GitHub OIDC. Skipped until the
-  # AZURE_CLIENT_ID repository variable is set (see README), so a fresh template
-  # does not fail this check before Azure auth is configured.
+  # Plans the basic example against Azure using GitHub OIDC, once per
+  # environment. Skipped until the AZURE_CLIENT_ID repository variable is set
+  # (see README), so a fresh template does not fail this check before Azure
+  # auth is configured. All three environments currently share one Azure
+  # subscription (ARM_SUBSCRIPTION_ID) — split per-environment credentials
+  # here if that changes.
   plan:
     needs: changes
     if: needs.changes.outputs.terraform == 'true' && vars.AZURE_CLIENT_ID != ''
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [dev, stg, prd]
     permissions:
       id-token: write
       contents: read
@@ -97,7 +104,7 @@ jobs:
         run: terraform validate -no-color
 
       - name: Terraform plan
-        run: terraform plan -input=false -no-color
+        run: terraform plan -input=false -no-color -var-file=../../environments/${{ matrix.environment }}.tfvars
 
   # Single required status check for branch protection. Always runs, and fails
   # only if test or plan actually failed — skipped (no Terraform changes, or

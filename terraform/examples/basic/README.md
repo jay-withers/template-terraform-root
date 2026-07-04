@@ -24,7 +24,9 @@ No resources.
 
 ## Inputs
 
-No inputs.
+| Name | Description | Type | Default | Required |
+| ---- | ----------- | ---- | ------- | :------: |
+| <a name="input_environment"></a> [environment](#input\_environment) | Deployment environment. Selected via -var-file=../../environments/<dev\|stg\|prd>.tfvars. | `string` | n/a | yes |
 
 ## Outputs
 
