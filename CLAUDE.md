@@ -54,7 +54,10 @@ key conflicts. Because there's now a real resource, both `make plan` and the
 `ci-terraform` plan job need real Azure credentials — `terraform test`
 (mocked provider) is the only credential-free check. `terraform/.tflint.hcl`
 runs both the generic `terraform` ruleset and the `azurerm` ruleset
-(`terraform-linters/tflint-ruleset-azurerm`) for azurerm-specific rules.
+(`terraform-linters/tflint-ruleset-azurerm`) for azurerm-specific rules. That
+plugin's `version = "..."` pin has its own Renovate regex manager in
+`renovate.json` (scoped to `.tflint.hcl`) since it's not a GitHub Action, pip
+package, or download URL any of the other managers already cover.
 
 Azure-side deletion protection (`prevent_deletion_if_contains_resources`) is a
 provider `features` block setting, not a resource attribute, so it can't live
@@ -97,7 +100,7 @@ Commits must follow [Conventional Commits](https://www.conventionalcommits.org/)
 
 ## Pre-commit config
 
-Hooks are in `.pre-commit-config.yaml` at the repo root. The `no-commit-to-branch` hook blocks direct commits to `main`. `terraform_fmt`/`terraform_validate`/`terraform_docs` come from `antonbabenko/pre-commit-terraform`. TFLint and Checkov are run by local hooks instead of that repo's `terraform_tflint`/`terraform_checkov`: `scripts/tflint-per-env.sh` and `scripts/checkov-per-env.sh` each glob `terraform/environments/*.tfvars` and run their tool once per environment with `--var-file`, so rules that depend on concrete variable values (naming, tags, region-specific checks) are evaluated against what each environment actually deploys — dropping a new environment's tfvars in `terraform/environments/` picks it up automatically, no config change needed. The other local hook, `check-tf-file-layout` (`scripts/check-tf-file-layout.sh`), enforces the locals/variables/outputs file-layout convention described above.
+Hooks are in `.pre-commit-config.yaml` at the repo root. The `no-commit-to-branch` hook blocks direct commits to `main`. `terraform_fmt`/`terraform_validate`/`terraform_docs` come from `antonbabenko/pre-commit-terraform`. TFLint and Checkov are run by local hooks instead of that repo's `terraform_tflint`/`terraform_checkov`: `scripts/tflint-per-env.sh` and `scripts/checkov-per-env.sh` each glob `terraform/environments/*.tfvars` and run their tool once per environment with `--var-file`, so rules that depend on concrete variable values (naming, tags, region-specific checks) are evaluated against what each environment actually deploys — dropping a new environment's tfvars in `terraform/environments/` picks it up automatically, no config change needed. `tflint-per-env.sh` also discovers every directory under `terraform/` containing `.tf` files (not just the module root) since tflint, unlike checkov, doesn't recurse — both scripts prune hidden directories (via `-name '.?*'`, not `-name .terraform` specifically) so any future tool cache directory is excluded too without code changes; don't switch that to `-name '.*'` — it also matches the find root `.` itself and silently prunes everything. `checkov-per-env.sh` deliberately does **not** pass `--download-external-modules` — it was tried (to scan resources created by registry modules like `Azure/naming/azurerm`), but cost ~15s per invocation regardless of caching (checkov's own graph-building overhead, not network time) for zero benefit here, since that module has no resources of its own. Checkov logs a harmless "Failed to download module" warning as a result. The other local hook, `check-tf-file-layout` (`scripts/check-tf-file-layout.sh`), enforces the locals/variables/outputs file-layout convention described above.
 
 ## CI
 

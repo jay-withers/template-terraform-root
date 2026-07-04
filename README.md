@@ -91,7 +91,17 @@ each environment's real `-var-file` gives rules that depend on concrete
 values — resource naming, tags, region-specific checks — something to
 actually evaluate. Both scripts glob `terraform/environments/*.tfvars` at
 run time, so adding a new environment's tfvars file is enough to get it
-linted — no `.pre-commit-config.yaml` change needed.
+linted — no `.pre-commit-config.yaml` change needed. `tflint-per-env.sh` also
+lints every directory under `terraform/` with `.tf` files (the module and
+`terraform/examples/basic/`, and any future example) since tflint doesn't
+recurse into subdirectories the way Checkov does.
+
+Checkov does *not* run with `--download-external-modules` — it was tried, but
+cost ~15s per invocation regardless of caching (checkov's own graph-building
+overhead, not network time) for zero benefit, since `Azure/naming/azurerm` has
+no resources of its own to find. Checkov logs a harmless "Failed to download
+module" warning as a result; revisit if the module tree grows to include
+modules with real resources.
 
 ## Tags and resource protection
 

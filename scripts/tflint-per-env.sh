@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
-# Runs tflint against terraform/ once per environment tfvars file
-# (terraform/environments/*.tfvars) so rules that depend on concrete variable
-# values (naming, tags, region-specific checks) are evaluated against what
-# each environment actually deploys, not just unresolved variables.
-# Environments are discovered dynamically — add a new one by dropping a new
-# tfvars file in terraform/environments/, no config changes needed here.
+# Runs tflint once per (directory, environment tfvars) pair under terraform/,
+# so rules that depend on concrete variable values (naming, tags,
+# region-specific checks) are evaluated against what each environment
+# actually deploys, not just unresolved variables. Unlike checkov, tflint
+# doesn't recurse into subdirectories on its own, so every directory
+# containing .tf files (the module itself, terraform/examples/basic/, and
+# any future example) is linted individually with the same shared config.
+# Both directories and environments are discovered dynamically — add a new
+# example dir or drop a new tfvars file in terraform/environments/ and it's
+# covered automatically, no config changes needed here.
 set -euo pipefail
 
 repo_root=$(git rev-parse --show-toplevel)
 tf_dir="$repo_root/terraform"
+tflint_config="$tf_dir/.tflint.hcl"
 
 shopt -s nullglob
 tfvars_files=("$tf_dir"/environments/*.tfvars)
@@ -19,15 +24,27 @@ if [ ${#tfvars_files[@]} -eq 0 ]; then
   exit 1
 fi
 
-tflint --init --chdir="$tf_dir" --config="$tf_dir/.tflint.hcl"
+declare -A seen_dirs
+lint_dirs=()
+while IFS= read -r -d '' file; do
+  dir=$(dirname "$file")
+  if [[ -z "${seen_dirs[$dir]:-}" ]]; then
+    seen_dirs[$dir]=1
+    lint_dirs+=("$dir")
+  fi
+done < <(find "$tf_dir" -type d -name '.?*' -prune -o -type f -name '*.tf' -print0)
+
+tflint --init --chdir="$tf_dir" --config="$tflint_config"
 
 status=0
-for tfvars in "${tfvars_files[@]}"; do
-  env=$(basename "$tfvars" .tfvars)
-  echo "==> tflint ($env)"
-  if ! tflint --chdir="$tf_dir" --config="$tf_dir/.tflint.hcl" --var-file="$tfvars"; then
-    status=1
-  fi
+for dir in "${lint_dirs[@]}"; do
+  for tfvars in "${tfvars_files[@]}"; do
+    env=$(basename "$tfvars" .tfvars)
+    echo "==> tflint (${dir#"$repo_root"/}, $env)"
+    if ! tflint --chdir="$dir" --config="$tflint_config" --var-file="$tfvars"; then
+      status=1
+    fi
+  done
 done
 
 exit "$status"

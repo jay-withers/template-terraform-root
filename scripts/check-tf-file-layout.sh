@@ -23,6 +23,6 @@ while IFS= read -r -d '' file; do
   check_block "$file" locals '^locals[[:space:]]*\{'
   check_block "$file" variables '^variable[[:space:]]+"[^"]+"[[:space:]]*\{'
   check_block "$file" outputs '^output[[:space:]]+"[^"]+"[[:space:]]*\{'
-done < <(find . -type d -name .terraform -prune -o -type f -name '*.tf' -print0)
+done < <(find . -type d -name '.?*' -prune -o -type f -name '*.tf' -print0)
 
 exit "$violations"

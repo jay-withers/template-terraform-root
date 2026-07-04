@@ -19,6 +19,15 @@ if [ ${#tfvars_files[@]} -eq 0 ]; then
   exit 1
 fi
 
+# Not passing --download-external-modules: it triggered checkov's external
+# module resolution, which cost ~15s per invocation (~45s across 3
+# environments) regardless of caching the download — that's checkov's own
+# graph-building overhead, not network time. Azure/naming/azurerm has no
+# resources of its own to scan, so the trade was pure cost for zero benefit
+# here. Revisit if the module tree grows to include modules with real
+# resources; checkov will keep logging a "Failed to download module" warning
+# in the meantime, which is expected and harmless.
+
 status=0
 for tfvars in "${tfvars_files[@]}"; do
   env=$(basename "$tfvars" .tfvars)
