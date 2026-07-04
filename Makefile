@@ -1,4 +1,5 @@
 TF_DIR := terraform
+EXAMPLE_DIR := $(TF_DIR)/examples/basic
 ENV ?= dev
 
 .DEFAULT_GOAL := help
@@ -28,8 +29,9 @@ fmt: ## terraform fmt -recursive
 validate: init ## terraform init + validate
 	terraform -chdir=$(TF_DIR) validate
 
-plan: init ## terraform init + plan (set ENV=dev|stg|prd, default dev)
-	terraform -chdir=$(TF_DIR) plan -var-file=environments/$(ENV).tfvars
+plan: ## terraform init + plan against the basic example (set ENV=dev|stg|prd, default dev)
+	terraform -chdir=$(EXAMPLE_DIR) init
+	terraform -chdir=$(EXAMPLE_DIR) plan -var-file=../../environments/$(ENV).tfvars
 
 test: init ## terraform test (mocked azurerm provider — no Azure auth)
 	terraform -chdir=$(TF_DIR) test

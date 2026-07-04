@@ -10,6 +10,18 @@ variable "environment" {
   }
 }
 
+variable "location" {
+  description = "Azure region the resource group is created in."
+  type        = string
+  default     = "westeurope"
+}
+
+variable "tags" {
+  description = "Tags applied to all resources created by this module."
+  type        = map(string)
+  default     = {}
+}
+
 # Add further module input variables below.
 #
 # Example:
