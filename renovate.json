@@ -1,7 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
-  "schedule": ["once a week"],
+  "extends": ["config:recommended", "schedule:weekly"],
   "autoApprove": true,
   "automerge": true,
   "automergeType": "pr",
