@@ -79,17 +79,21 @@ jq -n '{
 }' >"$WORKDIR/status-checks.json"
 apply_ruleset "required-status-checks" "$WORKDIR/status-checks.json"
 
-# Human review gate, with Renovate exempted. Classic branch protection has no
-# way to require reviews for humans while letting a bot self-merge (a bot
-# can't approve its own PR either way), so this uses a separate ruleset with
-# a bypass actor instead of folding review into the ruleset above.
+# Human review gate, with Renovate and repo admins exempted. Classic branch
+# protection has no way to require reviews for humans while letting a bot
+# self-merge (a bot can't approve its own PR either way), so this uses a
+# separate ruleset with bypass actors instead of folding review into the
+# ruleset above. The repo Admin role (built-in RepositoryRole actor_id 5)
+# bypasses "always" so admins can merge without a second approver; Renovate
+# bypasses only in the pull_request flow.
 if [ -n "${RENOVATE_APP_ID:-}" ]; then
   jq -n --argjson app_id "$RENOVATE_APP_ID" '{
     name: "require-pull-request-review",
     target: "branch",
     enforcement: "active",
     bypass_actors: [
-      { actor_id: $app_id, actor_type: "Integration", bypass_mode: "pull_request" }
+      { actor_id: $app_id, actor_type: "Integration", bypass_mode: "pull_request" },
+      { actor_id: 5, actor_type: "RepositoryRole", bypass_mode: "always" }
     ],
     conditions: { ref_name: { include: ["~DEFAULT_BRANCH"], exclude: [] } },
     rules: [

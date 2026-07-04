@@ -164,9 +164,10 @@ This is idempotent (safe to re-run) and:
     even when a PR has no Terraform changes — do **not** require `test`/`plan`
     directly, require this gate instead)
 - Creates a second ruleset requiring 1 approving review before merge, with the
-  Renovate GitHub App exempted (so its automerge still works) — this is a
-  separate ruleset because a review requirement can't be selectively bypassed
-  within a single ruleset's other rules.
+  Renovate GitHub App (so its automerge still works) and the repo **Admin**
+  role exempted as bypass actors — this is a separate ruleset because a review
+  requirement can't be selectively bypassed within a single ruleset's other
+  rules.
 
 Set `RENOVATE_APP_ID=<id>` (e.g. `RENOVATE_APP_ID=123 make configure-github`) if
 you run a self-hosted Renovate under a different bot account — the script

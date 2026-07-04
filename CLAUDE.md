@@ -117,6 +117,8 @@ settings that can't live in files: repo-level auto-merge (required for
 `renovate.json`'s `platformAutomerge`), delete-branch-on-merge, a ruleset
 requiring the `pre-commit` and `ci-terraform` status checks (enforced on
 everyone, including Renovate), and a second ruleset requiring 1 approving
-review with the Renovate GitHub App exempted as a bypass actor (resolved at
-runtime from the `renovate[bot]` user's avatar URL). It uses `gh api` and is
-idempotent — safe to re-run after renaming the repo or reinstalling Renovate.
+review with the Renovate GitHub App (resolved at runtime from the
+`renovate[bot]` user's avatar URL) and the repo Admin role (built-in
+`RepositoryRole` actor_id 5, `bypass_mode: always`) exempted as bypass actors.
+It uses `gh api` and is idempotent — safe to re-run after renaming the repo or
+reinstalling Renovate.
