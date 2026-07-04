@@ -21,12 +21,13 @@ make install
 Run `make` (or `make help`) to list the available targets:
 
 ```bash
-make install   # install pre-commit hooks (run once after cloning)
-make lint      # run all pre-commit hooks against every file
-make fmt       # terraform fmt -recursive
-make validate  # terraform init + validate
-make plan      # terraform init + plan
-make test      # terraform test (mocked azurerm provider — no Azure auth needed)
+make install           # install pre-commit hooks (run once after cloning)
+make configure-github  # configure GitHub repo settings (auto-merge, branch protection)
+make lint              # run all pre-commit hooks against every file
+make fmt               # terraform fmt -recursive
+make validate          # terraform init + validate
+make plan              # terraform init + plan
+make test              # terraform test (mocked azurerm provider — no Azure auth needed)
 ```
 
 Terraform targets run against the `terraform/` directory via `-chdir`. The
@@ -52,19 +53,37 @@ until Azure auth is wired up. To enable it:
    Actions → Variables): `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`,
    `AZURE_SUBSCRIPTION_ID`.
 
-## Branch protection
+## Configuring GitHub for a repo created from this template
 
-Add a ruleset (or branch protection rule) on `main` requiring these status
-checks before merge:
+Some settings can't be templated as files and need to be set once per repo via
+the GitHub API. Run, with the [`gh` CLI](https://cli.github.com) authenticated
+as an account with admin rights on the new repo:
 
-- **ci-pre-commit** — `pre-commit` job
-- **ci-terraform** — the `ci-terraform` gate job
+```bash
+make configure-github
+```
 
-`ci-terraform` runs `terraform test`/`plan` only when a PR touches Terraform
-(`terraform/**`, `.terraform-version`, or the workflow), but the `ci-terraform`
-gate job always runs and reports, so it is safe to require: a PR with no
-Terraform changes still satisfies it. Do **not** require `test`/`plan` directly
-— require the `ci-terraform` gate instead.
+This is idempotent (safe to re-run) and:
+
+- Enables repository **auto-merge**, which `renovate.json`'s
+  `platformAutomerge` setting depends on — without it, Renovate's PRs sit
+  fully green forever with nothing to merge them.
+- Enables **delete branch on merge**, so merged Renovate branches don't pile up.
+- Creates a ruleset on the default branch requiring these status checks before
+  merge, enforced on everyone including Renovate:
+  - **ci-pre-commit** — `pre-commit` job
+  - **ci-terraform** — the `ci-terraform` gate job (always runs and reports
+    even when a PR has no Terraform changes — do **not** require `test`/`plan`
+    directly, require this gate instead)
+- Creates a second ruleset requiring 1 approving review before merge, with the
+  Renovate GitHub App exempted (so its automerge still works) — this is a
+  separate ruleset because a review requirement can't be selectively bypassed
+  within a single ruleset's other rules.
+
+Set `RENOVATE_APP_ID=<id>` (e.g. `RENOVATE_APP_ID=123 make configure-github`) if
+you run a self-hosted Renovate under a different bot account — the script
+otherwise derives the app ID from the `renovate[bot]` user's avatar URL, which
+only works for the public Renovate app.
 
 ## Structure
 
@@ -91,5 +110,7 @@ commitlint.config.js
     ci-terraform.yml   # terraform test + plan, gated to Terraform changes
     cd-tag.yml         # auto-tags on merge to main (semver patch bump)
 renovate.json          # automated dependency updates
+scripts/
+  configure-github.sh  # one-time GitHub settings (auto-merge, branch protection)
 Makefile
 ```

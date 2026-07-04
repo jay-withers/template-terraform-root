@@ -35,12 +35,13 @@ Tests mock the `azurerm` provider (`mock_provider`), so `make test` and the
 `make` with no target prints the self-documenting help (the default goal).
 
 ```bash
-make install   # install pre-commit hooks (run once after cloning)
-make lint      # run all pre-commit hooks against every file
-make fmt       # terraform fmt -recursive
-make validate  # terraform init + validate
-make plan      # terraform init + plan
-make test      # terraform test (mocked azurerm provider — no Azure auth)
+make install           # install pre-commit hooks (run once after cloning)
+make configure-github  # configure GitHub repo settings (auto-merge, branch protection) — see scripts/configure-github.sh
+make lint              # run all pre-commit hooks against every file
+make fmt               # terraform fmt -recursive
+make validate          # terraform init + validate
+make plan              # terraform init + plan
+make test              # terraform test (mocked azurerm provider — no Azure auth)
 ```
 
 ## Commit messages
@@ -58,3 +59,14 @@ Workflows are prefixed `ci-` (pull-request checks) or `cd-` (post-merge delivery
 - **ci-pre-commit**: runs all linters on PRs to `main`
 - **ci-terraform**: a `changes` job (dorny/paths-filter) gates a `test` job (`terraform test`, mocked provider) and a `plan` job (`terraform plan` on `terraform/examples/basic/` via Azure OIDC) so they run only when a PR touches Terraform. The plan job is additionally gated on `if: vars.AZURE_CLIENT_ID != ''`, so it stays skipped until the `AZURE_CLIENT_ID`/`AZURE_TENANT_ID`/`AZURE_SUBSCRIPTION_ID` repository variables are set. The `ci-terraform` gate job always runs and is the check to require in branch protection — path filtering is at the job level (not the workflow trigger) precisely so the required check always reports.
 - **cd-tag**: auto-creates a semver tag on every merge to `main` (default bump: patch)
+
+## GitHub repo settings
+
+`scripts/configure-github.sh` (run via `make configure-github`) sets the platform
+settings that can't live in files: repo-level auto-merge (required for
+`renovate.json`'s `platformAutomerge`), delete-branch-on-merge, a ruleset
+requiring the `pre-commit` and `ci-terraform` status checks (enforced on
+everyone, including Renovate), and a second ruleset requiring 1 approving
+review with the Renovate GitHub App exempted as a bypass actor (resolved at
+runtime from the `renovate[bot]` user's avatar URL). It uses `gh api` and is
+idempotent — safe to re-run after renaming the repo or reinstalling Renovate.

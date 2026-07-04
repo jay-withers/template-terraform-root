@@ -2,7 +2,7 @@ TF_DIR := terraform
 
 .DEFAULT_GOAL := help
 
-.PHONY: help install lint init fmt validate plan test
+.PHONY: help install configure-github lint init fmt validate plan test
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -11,6 +11,9 @@ help: ## Show this help
 install: ## Install pre-commit hooks (run once after cloning)
 	pre-commit install
 	pre-commit install --hook-type commit-msg
+
+configure-github: ## Configure GitHub repo settings for a template-derived repo (auto-merge, branch protection) via gh CLI
+	./scripts/configure-github.sh
 
 lint: ## Run all pre-commit hooks against every file
 	pre-commit run --all-files
