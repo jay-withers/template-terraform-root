@@ -7,7 +7,7 @@
   "automergeType": "pr",
   "platformAutomerge": true,
   "pre-commit": {
-    "fileMatch": ["(^|/)config/\\.pre-commit-config\\.yaml$"]
+    "fileMatch": ["(^|/)\\.pre-commit-config\\.yaml$"]
   },
   "regexManagers": [
     {
