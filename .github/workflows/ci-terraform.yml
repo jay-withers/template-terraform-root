@@ -20,7 +20,7 @@ jobs:
       terraform: ${{ steps.filter.outputs.terraform }}
     steps:
       - name: Detect Terraform changes
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
