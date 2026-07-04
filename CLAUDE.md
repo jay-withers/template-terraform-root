@@ -27,6 +27,14 @@ The module lives in `terraform/` (`versions.tf`, `main.tf`, `variables.tf`,
 Terraform version is pinned in `.terraform-version` at the repo root (tfenv/tenv
 and CI read it; it must stay at root so tfenv/tenv can discover it).
 
+The module takes a required `environment` input (`terraform/variables.tf`),
+validated to `dev`/`stg`/`prd`. `terraform/environments/{dev,stg,prd}.tfvars`
+hold the corresponding `-var-file` inputs for root configs like
+`terraform/examples/basic/`, selected with a path relative to that config's
+directory (e.g. `-var-file=../../environments/dev.tfvars`). These tfvars files
+are intentionally committed — `.gitignore` no longer excludes `*.tfvars`; don't
+put secrets in them (`gitleaks` scans as a backstop).
+
 Tests mock the `azurerm` provider (`mock_provider`), so `make test` and the
 `ci-terraform` test job run without Azure credentials.
 
@@ -57,7 +65,7 @@ Hooks are in `.pre-commit-config.yaml` at the repo root. The `no-commit-to-branc
 Workflows are prefixed `ci-` (pull-request checks) or `cd-` (post-merge delivery):
 
 - **ci-pre-commit**: runs all linters on PRs to `main`
-- **ci-terraform**: a `changes` job (dorny/paths-filter) gates a `test` job (`terraform test`, mocked provider) and a `plan` job (`terraform plan` on `terraform/examples/basic/` via Azure OIDC) so they run only when a PR touches Terraform. The plan job is additionally gated on `if: vars.AZURE_CLIENT_ID != ''`, so it stays skipped until the `AZURE_CLIENT_ID`/`AZURE_TENANT_ID`/`AZURE_SUBSCRIPTION_ID` repository variables are set. The `ci-terraform` gate job always runs and is the check to require in branch protection — path filtering is at the job level (not the workflow trigger) precisely so the required check always reports.
+- **ci-terraform**: a `changes` job (dorny/paths-filter) gates a `test` job (`terraform test`, mocked provider) and a `plan` job (`terraform plan -var-file=../../environments/dev.tfvars` on `terraform/examples/basic/` via Azure OIDC) so they run only when a PR touches Terraform. The plan job is additionally gated on `if: vars.AZURE_CLIENT_ID != ''`, so it stays skipped until the `AZURE_CLIENT_ID`/`AZURE_TENANT_ID`/`AZURE_SUBSCRIPTION_ID` repository variables are set. The `ci-terraform` gate job always runs and is the check to require in branch protection — path filtering is at the job level (not the workflow trigger) precisely so the required check always reports.
 - **cd-tag**: auto-creates a semver tag on every merge to `main` (default bump: patch)
 
 ## GitHub repo settings

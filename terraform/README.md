@@ -22,9 +22,13 @@ No resources.
 
 ## Inputs
 
-No inputs.
+| Name | Description | Type | Default | Required |
+| ---- | ----------- | ---- | ------- | :------: |
+| <a name="input_environment"></a> [environment](#input\_environment) | Deployment environment. Drives environment-specific behaviour (naming, sizing, etc.) as the module grows. | `string` | n/a | yes |
 
 ## Outputs
 
-No outputs.
+| Name | Description |
+| ---- | ----------- |
+| <a name="output_environment"></a> [environment](#output\_environment) | The deployment environment passed to the module. |
 <!-- END_TF_DOCS -->

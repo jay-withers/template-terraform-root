@@ -97,7 +97,7 @@ jobs:
         run: terraform validate -no-color
 
       - name: Terraform plan
-        run: terraform plan -input=false -no-color
+        run: terraform plan -input=false -no-color -var-file=../../environments/dev.tfvars
 
   # Single required status check for branch protection. Always runs, and fails
   # only if test or plan actually failed — skipped (no Terraform changes, or

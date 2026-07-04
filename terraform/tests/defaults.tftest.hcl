@@ -8,10 +8,30 @@ mock_provider "azurerm" {}
 run "plan_with_defaults" {
   command = plan
 
-  # Example assertion — uncomment once the module creates resources/outputs:
-  #
-  # assert {
-  #   condition     = output.name == var.name
-  #   error_message = "output name did not match the requested name"
-  # }
+  variables {
+    environment = "dev"
+  }
+
+  assert {
+    condition     = output.environment == "dev"
+    error_message = "output environment did not match the requested environment"
+  }
 }
+
+run "rejects_unknown_environment" {
+  command = plan
+
+  variables {
+    environment = "not-a-real-environment"
+  }
+
+  expect_failures = [var.environment]
+}
+
+# Add further assert blocks as the module grows; see the commented example
+# below.
+#
+# assert {
+#   condition     = output.name == var.name
+#   error_message = "output name did not match the requested name"
+# }

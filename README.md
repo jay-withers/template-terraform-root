@@ -39,10 +39,27 @@ Terraform version is pinned in `.terraform-version` (used by tfenv/tenv and CI).
 provider, so `make test` (and the `ci-terraform` **test** job) run with no Azure
 credentials. Add `assert` blocks as the module grows.
 
+## Environments
+
+`terraform/environments/{dev,stg,prd}.tfvars` hold per-environment inputs for
+`terraform/examples/basic/` (or any other root config you add). Select one with
+`-var-file`, relative to the config's own directory:
+
+```bash
+terraform -chdir=terraform/examples/basic plan -var-file=../../environments/dev.tfvars
+```
+
+These files are **committed, not gitignored** — see `.gitignore`. Don't put
+secrets in them; use Azure Key Vault, GitHub Actions secrets, or `ARM_*`
+environment variables instead. `gitleaks` (pre-commit and CI) scans every
+commit as a backstop. The module's `environment` input (`terraform/variables.tf`)
+validates against exactly these three values.
+
 ## Azure auth for `terraform plan`
 
 The `ci-terraform` **plan** job runs `terraform plan` against
-`terraform/examples/basic/` using GitHub OIDC (no long-lived secrets). It is **skipped until you set the
+`terraform/examples/basic/` (with `environments/dev.tfvars`) using GitHub OIDC
+(no long-lived secrets). It is **skipped until you set the
 `AZURE_CLIENT_ID` repository variable**, so a freshly created repo stays green
 until Azure auth is wired up. To enable it:
 
@@ -100,6 +117,10 @@ terraform/
   .tflint.hcl          # TFLint config (terraform ruleset, recommended preset)
   tests/
     defaults.tftest.hcl  # terraform test (mocked azurerm provider)
+  environments/
+    dev.tfvars         # -var-file inputs per environment (committed, not gitignored)
+    stg.tfvars
+    prd.tfvars
   examples/
     basic/             # example ci-terraform plans against
 .pre-commit-config.yaml

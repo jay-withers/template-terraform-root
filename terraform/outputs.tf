@@ -1,4 +1,11 @@
 # outputs.tf — values exported by this module.
+
+output "environment" {
+  description = "The deployment environment passed to the module."
+  value       = var.environment
+}
+
+# Add further module outputs below.
 #
 # Example:
 #
