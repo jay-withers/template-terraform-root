@@ -55,6 +55,16 @@ repos:
       - id: shellcheck
         args: [--external-sources]
 
+  - repo: local
+    hooks:
+      - id: check-tf-file-layout
+        name: Check locals/variables/outputs file layout
+        description: Fails if a `locals`/`variable`/`output` block isn't in a matching locals*.tf/variables*.tf/outputs*.tf file.
+        entry: scripts/check-tf-file-layout.sh
+        language: script
+        pass_filenames: false
+        files: \.tf$
+
   - repo: https://github.com/antonbabenko/pre-commit-terraform
     rev: 05fd71a57a467ccf5598f7e836d3af4cf9225abb # frozen: v1.108.0
     hooks:

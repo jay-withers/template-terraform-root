@@ -17,8 +17,8 @@ creation. Prefer working inside the container so tool versions match CI.
 
 ## Terraform layout
 
-The module lives in `terraform/` (`versions.tf`, `main.tf`, `variables.tf`,
-`outputs.tf`); its tests are in `terraform/tests/*.tftest.hcl`.
+The module lives in `terraform/` (`versions.tf`, `main.tf`, `locals.tf`,
+`variables.tf`, `outputs.tf`); its tests are in `terraform/tests/*.tftest.hcl`.
 `terraform/examples/basic/` is a consumer of the module and is what
 `ci-terraform` (and `make plan`) plan against — the module itself has no
 provider block (modules shouldn't configure providers) so it can't be planned
@@ -29,12 +29,26 @@ on its own; `fmt`/`validate`/`test` still run directly against `terraform/` via
 Terraform version is pinned in `.terraform-version` at the repo root (tfenv/tenv
 and CI read it; it must stay at root so tfenv/tenv can discover it).
 
+**File layout is enforced, not just conventional**: `locals`/`variable`/`output`
+blocks must live in a matching `locals.tf`/`variables.tf`/`outputs.tf`, or a
+topic-scoped variant of any of them (e.g. `outputs.network.tf`,
+`locals.network.tf`), via the local pre-commit hook
+`scripts/check-tf-file-layout.sh`. TFLint's `terraform_standard_module_structure`
+rule covers similar ground but hardcodes the exact filenames `variables.tf`/
+`outputs.tf` with no topic-scoped support and no locals coverage at all —
+it's deliberately left disabled in `terraform/.tflint.hcl` in favor of the
+custom script. This applies to every root config in the repo, including
+`terraform/examples/basic/` — hence its `variables.tf`/`outputs.tf` even
+though the example itself is tiny. When adding a new root config or growing
+the module, put new `variable`/`output`/`locals` blocks in the right file from
+the start rather than relying on a later cleanup pass.
+
 The module creates one resource, `azurerm_resource_group.this`, named via the
 `Azure/naming/azurerm` module (suffixed with `var.environment`) — replace/add
 to this as the module grows. Inputs: a required `environment`
 (`terraform/variables.tf`, validated to `dev`/`stg`/`prd`), `location`
 (defaults to `westeurope`), and `tags`. `tags` is merged with
-`local.default_tags` (`terraform/main.tf`) — `environment` and
+`local.default_tags` (`terraform/locals.tf`) — `environment` and
 `managed-by = "terraform"` — with caller-supplied `tags` taking precedence on
 key conflicts. Because there's now a real resource, both `make plan` and the
 `ci-terraform` plan job need real Azure credentials — `terraform test`
@@ -83,7 +97,7 @@ Commits must follow [Conventional Commits](https://www.conventionalcommits.org/)
 
 ## Pre-commit config
 
-Hooks are in `.pre-commit-config.yaml` at the repo root. The `no-commit-to-branch` hook blocks direct commits to `main`. Terraform hooks come from `antonbabenko/pre-commit-terraform`; the TFLint hook reads `terraform/.tflint.hcl`.
+Hooks are in `.pre-commit-config.yaml` at the repo root. The `no-commit-to-branch` hook blocks direct commits to `main`. Terraform hooks come from `antonbabenko/pre-commit-terraform`; the TFLint hook reads `terraform/.tflint.hcl`. The one local hook, `check-tf-file-layout` (`scripts/check-tf-file-layout.sh`), enforces the locals/variables/outputs file-layout convention described above.
 
 ## CI
 

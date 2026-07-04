@@ -22,11 +22,6 @@ provider "azurerm" {
   use_oidc = true
 }
 
-variable "environment" {
-  description = "Deployment environment. Selected via -var-file=../../environments/<dev|stg|prd>.tfvars."
-  type        = string
-}
-
 module "basic" {
   source = "../../"
 
