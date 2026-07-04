@@ -30,6 +30,16 @@ run "plan_with_defaults" {
     condition     = strcontains(azurerm_resource_group.this.name, "dev")
     error_message = "resource group name did not include the environment"
   }
+
+  assert {
+    condition     = azurerm_resource_group.this.tags["environment"] == "dev"
+    error_message = "resource group did not receive the default environment tag"
+  }
+
+  assert {
+    condition     = azurerm_resource_group.this.tags["managed-by"] == "terraform"
+    error_message = "resource group did not receive the default managed-by tag"
+  }
 }
 
 run "rejects_unknown_environment" {
@@ -41,6 +51,47 @@ run "rejects_unknown_environment" {
   }
 
   expect_failures = [var.environment]
+}
+
+run "uses_default_location_when_unset" {
+  command = apply
+
+  variables {
+    environment = "stg"
+  }
+
+  assert {
+    condition     = azurerm_resource_group.this.location == "westeurope"
+    error_message = "resource group did not fall back to the default location"
+  }
+}
+
+run "custom_tags_merge_with_defaults" {
+  command = apply
+
+  variables {
+    environment = "dev"
+    location    = "uksouth"
+    tags = {
+      managed-by = "pulumi" # overrides the module's default
+      owner      = "platform-team"
+    }
+  }
+
+  assert {
+    condition     = azurerm_resource_group.this.tags["managed-by"] == "pulumi"
+    error_message = "caller-supplied tags did not override the default managed-by tag"
+  }
+
+  assert {
+    condition     = azurerm_resource_group.this.tags["owner"] == "platform-team"
+    error_message = "caller-supplied tags were not applied to the resource group"
+  }
+
+  assert {
+    condition     = azurerm_resource_group.this.tags["environment"] == "dev"
+    error_message = "default environment tag should still be present when not overridden"
+  }
 }
 
 # Add further assert blocks as the module grows; see the commented example

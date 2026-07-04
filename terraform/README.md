@@ -33,7 +33,7 @@
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_environment"></a> [environment](#input\_environment) | Deployment environment. Drives environment-specific behaviour (naming, sizing, etc.) as the module grows. | `string` | n/a | yes |
 | <a name="input_location"></a> [location](#input\_location) | Azure region the resource group is created in. | `string` | `"westeurope"` | no |
-| <a name="input_tags"></a> [tags](#input\_tags) | Tags applied to all resources created by this module. | `map(string)` | `{}` | no |
+| <a name="input_tags"></a> [tags](#input\_tags) | Tags applied to all resources created by this module, merged with (and taking precedence over) the module's default tags (`environment`, `managed-by`). | `map(string)` | `{}` | no |
 
 ## Outputs
 

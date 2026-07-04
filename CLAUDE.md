@@ -33,12 +33,22 @@ The module creates one resource, `azurerm_resource_group.this`, named via the
 `Azure/naming/azurerm` module (suffixed with `var.environment`) — replace/add
 to this as the module grows. Inputs: a required `environment`
 (`terraform/variables.tf`, validated to `dev`/`stg`/`prd`), `location`
-(defaults to `westeurope`), and `tags`. Because there's now a real resource,
-both `make plan` and the `ci-terraform` plan job need real Azure credentials —
-`terraform test` (mocked provider) is the only credential-free check.
-`terraform/.tflint.hcl` runs both the generic `terraform` ruleset and the
-`azurerm` ruleset (`terraform-linters/tflint-ruleset-azurerm`) for
-azurerm-specific rules.
+(defaults to `westeurope`), and `tags`. `tags` is merged with
+`local.default_tags` (`terraform/main.tf`) — `environment` and
+`managed-by = "terraform"` — with caller-supplied `tags` taking precedence on
+key conflicts. Because there's now a real resource, both `make plan` and the
+`ci-terraform` plan job need real Azure credentials — `terraform test`
+(mocked provider) is the only credential-free check. `terraform/.tflint.hcl`
+runs both the generic `terraform` ruleset and the `azurerm` ruleset
+(`terraform-linters/tflint-ruleset-azurerm`) for azurerm-specific rules.
+
+Azure-side deletion protection (`prevent_deletion_if_contains_resources`) is a
+provider `features` block setting, not a resource attribute, so it can't live
+in the module (modules shouldn't configure providers) — it's set explicitly in
+`terraform/examples/basic/main.tf`'s provider block instead. It already
+defaults to `true` in the `azurerm` provider; document the same expectation
+for real consumers of this module rather than trying to enforce it from
+inside `terraform/main.tf`.
 
 `terraform/environments/{dev,stg,prd}.tfvars` hold the `-var-file` inputs for
 root configs like `terraform/examples/basic/`, selected with a path relative
@@ -80,7 +90,7 @@ Hooks are in `.pre-commit-config.yaml` at the repo root. The `no-commit-to-branc
 Workflows are prefixed `ci-` (pull-request checks) or `cd-` (post-merge delivery):
 
 - **ci-pre-commit**: runs all linters on PRs to `main`
-- **ci-terraform**: a `changes` job (dorny/paths-filter) gates a `test` job (`terraform test`, mocked provider) and a `plan` job (`terraform plan -var-file=../../environments/dev.tfvars` on `terraform/examples/basic/` via Azure OIDC) so they run only when a PR touches Terraform. The plan job is additionally gated on `if: vars.AZURE_CLIENT_ID != ''`, so it stays skipped until the `AZURE_CLIENT_ID`/`AZURE_TENANT_ID`/`AZURE_SUBSCRIPTION_ID` repository variables are set. The `ci-terraform` gate job always runs and is the check to require in branch protection — path filtering is at the job level (not the workflow trigger) precisely so the required check always reports.
+- **ci-terraform**: a `changes` job (dorny/paths-filter) gates a `test` job (`terraform test`, mocked provider) and a `plan` job (`terraform plan` on `terraform/examples/basic/` via Azure OIDC, matrixed over `environment: [dev, stg, prd]` against `../../environments/<env>.tfvars`) so they run only when a PR touches Terraform. The plan job is additionally gated on `if: vars.AZURE_CLIENT_ID != ''`, so it stays skipped until the `AZURE_CLIENT_ID`/`AZURE_TENANT_ID`/`AZURE_SUBSCRIPTION_ID` repository variables are set — all three matrix legs currently share that one subscription. The `ci-terraform` gate job always runs and is the check to require in branch protection — path filtering is at the job level (not the workflow trigger) precisely so the required check always reports.
 - **cd-tag**: auto-creates a semver tag on every merge to `main` (default bump: patch)
 
 ## GitHub repo settings

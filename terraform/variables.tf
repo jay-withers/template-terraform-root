@@ -17,7 +17,7 @@ variable "location" {
 }
 
 variable "tags" {
-  description = "Tags applied to all resources created by this module."
+  description = "Tags applied to all resources created by this module, merged with (and taking precedence over) the module's default tags (`environment`, `managed-by`)."
   type        = map(string)
   default     = {}
 }
