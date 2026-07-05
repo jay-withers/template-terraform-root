@@ -4,7 +4,7 @@ ENV ?= dev
 
 .DEFAULT_GOAL := help
 
-.PHONY: help install configure-github lint init fmt validate plan test
+.PHONY: help install protect-branch lint init fmt validate plan test
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -14,8 +14,8 @@ install: ## Install pre-commit hooks (run once after cloning)
 	pre-commit install
 	pre-commit install --hook-type commit-msg
 
-configure-github: ## Configure GitHub repo settings for a template-derived repo (auto-merge, branch protection) via gh CLI
-	./scripts/configure-github.sh
+protect-branch: ## Configure GitHub repo settings for a template-derived repo (auto-merge, branch protection) via gh CLI - args: BRANCH=main CHECKS="<required check names>" (required)
+	./scripts/protect-branch.sh "$(BRANCH)" "$(CHECKS)"
 
 lint: ## Run all pre-commit hooks against every file
 	pre-commit run --all-files

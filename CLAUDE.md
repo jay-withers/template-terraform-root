@@ -86,7 +86,7 @@ the naming module's random suffix, which isn't known until after apply.
 
 ```bash
 make install           # install pre-commit hooks (run once after cloning)
-make configure-github  # configure GitHub repo settings (auto-merge, branch protection) — see scripts/configure-github.sh
+make protect-branch    # configure GitHub repo settings (auto-merge, branch protection) — see scripts/protect-branch.sh; CHECKS="..." required
 make lint              # run all pre-commit hooks against every file
 make fmt               # terraform fmt -recursive
 make validate          # terraform init + validate
@@ -112,13 +112,16 @@ Workflows are prefixed `ci-` (pull-request checks) or `cd-` (post-merge delivery
 
 ## GitHub repo settings
 
-`scripts/configure-github.sh` (run via `make configure-github`) sets the platform
-settings that can't live in files: repo-level auto-merge (required for
-`renovate.json`'s `platformAutomerge`), delete-branch-on-merge, a ruleset
-requiring the `pre-commit` and `ci-terraform` status checks (enforced on
-everyone, including Renovate), and a second ruleset requiring 1 approving
-review with the Renovate GitHub App (resolved at runtime from the
-`renovate[bot]` user's avatar URL) and the repo Admin role (built-in
-`RepositoryRole` actor_id 5, `bypass_mode: always`) exempted as bypass actors.
-It uses `gh api` and is idempotent — safe to re-run after renaming the repo or
-reinstalling Renovate.
+`scripts/protect-branch.sh` (run via `make protect-branch`, args:
+`BRANCH=<name>` default `main`, `CHECKS="<space-separated contexts>"` —
+**required**, no default, since it depends on whatever CI workflows the
+consuming repo actually runs, not this template's) sets the platform settings
+that can't live in files: repo-level auto-merge (required for
+`renovate.json`'s `platformAutomerge`), delete-branch-on-merge, and a ruleset
+on the target branch requiring the given status checks and 1 approving review
+(`APPROVALS_REQUIRED` to override), with the Renovate GitHub App (looked up
+via `gh api apps/renovate`) and the repo Admin role (built-in `RepositoryRole`
+actor_id 5) exempted as `bypass_mode: always` bypass actors on both rules. It
+deletes every ruleset already on the repo before creating this one, so re-runs
+replace rather than accumulate — it uses `gh api` and is otherwise idempotent
+(safe to re-run after renaming the repo or reinstalling Renovate).

@@ -25,7 +25,7 @@ Run `make` (or `make help`) to list the available targets:
 
 ```bash
 make install           # install pre-commit hooks (run once after cloning)
-make configure-github  # configure GitHub repo settings (auto-merge, branch protection)
+make protect-branch    # configure GitHub repo settings (auto-merge, branch protection) — CHECKS="..." required
 make lint              # run all pre-commit hooks against every file
 make fmt               # terraform fmt -recursive
 make validate          # terraform init + validate
@@ -148,31 +148,32 @@ the GitHub API. Run, with the [`gh` CLI](https://cli.github.com) authenticated
 as an account with admin rights on the new repo:
 
 ```bash
-make configure-github
+make protect-branch CHECKS="pre-commit ci-terraform"
 ```
 
-This is idempotent (safe to re-run) and:
+This runs `scripts/protect-branch.sh` and is idempotent (safe to re-run). It:
 
 - Enables repository **auto-merge**, which `renovate.json`'s
   `platformAutomerge` setting depends on — without it, Renovate's PRs sit
   fully green forever with nothing to merge them.
 - Enables **delete branch on merge**, so merged Renovate branches don't pile up.
-- Creates a ruleset on the default branch requiring these status checks before
-  merge, enforced on everyone including Renovate:
-  - **ci-pre-commit** — `pre-commit` job
-  - **ci-terraform** — the `ci-terraform` gate job (always runs and reports
-    even when a PR has no Terraform changes — do **not** require `test`/`plan`
-    directly, require this gate instead)
-- Creates a second ruleset requiring 1 approving review before merge, with the
-  Renovate GitHub App (so its automerge still works) and the repo **Admin**
-  role exempted as bypass actors — this is a separate ruleset because a review
-  requirement can't be selectively bypassed within a single ruleset's other
-  rules.
+- Deletes every ruleset currently on the repo, then creates a fresh one on the
+  target branch (default `main`, override with `BRANCH=<name>`) requiring the
+  given status checks and 1 approving review before merge (override with
+  `APPROVALS_REQUIRED`), with the Renovate GitHub App and the repo **Admin**
+  role exempted as bypass actors on both, so Renovate's automerge and admin
+  self-merges aren't blocked waiting on a second approver. This makes re-runs
+  a clean replace rather than an accumulation of stale rulesets — don't run
+  it against a repo that has unrelated rulesets you want to keep.
 
-Set `RENOVATE_APP_ID=<id>` (e.g. `RENOVATE_APP_ID=123 make configure-github`) if
-you run a self-hosted Renovate under a different bot account — the script
-otherwise derives the app ID from the `renovate[bot]` user's avatar URL, which
-only works for the public Renovate app.
+`CHECKS` is **required** — there's no sane default, since it depends on
+whatever CI workflows *your* repo runs, not this template's. For this repo's
+own workflows that's `"pre-commit ci-terraform"`:
+
+- **ci-pre-commit** — `pre-commit` job
+- **ci-terraform** — the `ci-terraform` gate job (always runs and reports even
+  when a PR has no Terraform changes — do **not** require `test`/`plan`
+  directly, require this gate instead)
 
 ## Structure
 
@@ -213,7 +214,7 @@ CONTRIBUTING.md         # contributor workflow and expectations
     cd-tag.yml         # auto-tags on merge to main (semver patch bump)
 renovate.json          # automated dependency updates
 scripts/
-  configure-github.sh       # one-time GitHub settings (auto-merge, branch protection)
+  protect-branch.sh         # one-time GitHub settings (auto-merge, branch protection ruleset)
   check-tf-file-layout.sh   # pre-commit hook: enforces locals/variables/outputs file layout
   tflint-per-env.sh         # pre-commit hook: tflint once per terraform/environments/*.tfvars
   checkov-per-env.sh        # pre-commit hook: checkov once per terraform/environments/*.tfvars
