@@ -15,14 +15,22 @@
 # Requires: gh CLI, authenticated with admin rights on the target repo.
 #
 # Usage:
-#   ./scripts/protect-branch.sh [branch] <required-check-contexts>
+#   ./scripts/protect-branch.sh [branch] [required-check-contexts]
 #
-# required-check-contexts is a required, space-separated list of status check
-# context names - there's no sane default since it varies per repo (whatever
-# workflows/job ids a given consumer of this template has). Check names must
-# match the job ids that report on a PR to the target branch, e.g. for this
-# repo's own workflows that would be "pre-commit ci-terraform" (see CLAUDE.md
-# on why ci-terraform, not test/plan directly, is the one to require).
+# required-check-contexts is a NEWLINE-separated list of status check context
+# names (newline, not space, because a context name can itself contain spaces
+# - see below), defaulting to this template's own two checks: "pre-commit /
+# Pre-commit" and "ci-terraform".
+#
+# Check names must match the context a job reports on a PR, not just its job
+# id. ci-pre-commit's `pre-commit` job calls a reusable workflow, so the
+# context it reports is "<caller job id> / <reusable job name>" =
+# "pre-commit / Pre-commit", NOT the bare "pre-commit" - requiring the bare
+# name leaves the check "Expected" forever. ci-terraform is still a plain
+# inline job (not a reusable-workflow call), so its context is just
+# "ci-terraform" - the gate job (see CLAUDE.md on why that one, not
+# test/plan directly, is the one to require). Confirm exact names with:
+# gh pr checks
 #
 # Env overrides:
 #   REPO               owner/name (default: current repo via gh)
@@ -31,16 +39,16 @@
 set -euo pipefail
 
 BRANCH="${1:-main}"
-REQUIRED_CHECKS="${2:-}"
+REQUIRED_CHECKS="${2:-$'pre-commit / Pre-commit\nci-terraform'}"
 APPROVALS_REQUIRED="${APPROVALS_REQUIRED:-1}"
 RULESET_NAME="Protect ${BRANCH}"
 
 command -v gh >/dev/null 2>&1 || { echo "gh CLI is required" >&2; exit 1; }
 
 if [[ -z "${REQUIRED_CHECKS}" ]]; then
-  echo "error: required-check-contexts is required (space-separated status check names)" >&2
-  echo "usage: ./scripts/protect-branch.sh [branch] \"<check1> <check2> ...\"" >&2
-  echo "       e.g. ./scripts/protect-branch.sh main \"pre-commit ci-terraform\"" >&2
+  echo "error: required-check-contexts must not be empty" >&2
+  echo "usage: ./scripts/protect-branch.sh [branch] '<check1>' (one context per line)" >&2
+  echo "       e.g. ./scripts/protect-branch.sh main 'pre-commit / Pre-commit'" >&2
   exit 1
 fi
 
@@ -55,7 +63,10 @@ echo "Checks:  ${REQUIRED_CHECKS}"
 echo "==> Enabling repository auto-merge and merged-branch cleanup"
 gh api -X PATCH "repos/${REPO}" -f allow_auto_merge=true -F delete_branch_on_merge=true >/dev/null
 
-read -ra REQUIRED_CHECKS_ARR <<<"${REQUIRED_CHECKS}"
+# Split on newlines, not spaces: a context name can contain spaces (e.g. the
+# reusable-workflow context "pre-commit / Pre-commit"). read -d '' with a
+# newline IFS is portable to macOS's bash 3.2 (mapfile is bash 4+).
+IFS=$'\n' read -rd '' -a REQUIRED_CHECKS_ARR <<<"${REQUIRED_CHECKS}" || true
 REQUIRED_CHECKS_JSON="$(jq -nc '$ARGS.positional | map({context: .})' --args -- "${REQUIRED_CHECKS_ARR[@]}")"
 
 echo "Looking up the Renovate GitHub App id..."
