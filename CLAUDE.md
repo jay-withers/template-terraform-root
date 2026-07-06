@@ -86,7 +86,7 @@ the naming module's random suffix, which isn't known until after apply.
 
 ```bash
 make install           # install pre-commit hooks (run once after cloning)
-make protect-branch    # configure GitHub repo settings (auto-merge, branch protection) — see scripts/protect-branch.sh; CHECKS="..." required
+make protect-branch    # configure GitHub repo settings (auto-merge, branch protection) — see scripts/protect-branch.sh; override BRANCH/CHECKS to match your repo's checks
 make lint              # run all pre-commit hooks against every file
 make fmt               # terraform fmt -recursive
 make validate          # terraform init + validate
@@ -106,17 +106,20 @@ Hooks are in `.pre-commit-config.yaml` at the repo root. The `no-commit-to-branc
 
 Workflows are prefixed `ci-` (pull-request checks) or `cd-` (post-merge delivery):
 
-- **ci-pre-commit**: runs all linters on PRs to `main`
+- **ci-pre-commit**: runs all linters on PRs to `main` via the `pre-commit` job, which calls the reusable workflow `jay-withers/template-pipelines/.github/workflows/pre-commit.yml` (pinned by commit SHA, with the tag as a comment) rather than inlining the steps — because it's a reusable-workflow call, the status check context it reports on a PR is `pre-commit / Pre-commit` (`<caller job id> / <reusable job name>`), not the bare `pre-commit` job id; see the `CHECKS` note under GitHub repo settings below
 - **ci-terraform**: a `changes` job (dorny/paths-filter) gates a `test` job (`terraform test`, mocked provider) and a `plan` job (`terraform plan` on `terraform/examples/basic/` via Azure OIDC, matrixed over `environment: [dev, stg, prd]` against `../../environments/<env>.tfvars`) so they run only when a PR touches Terraform. The plan job is additionally gated on `if: vars.AZURE_CLIENT_ID != ''`, so it stays skipped until the `AZURE_CLIENT_ID`/`AZURE_TENANT_ID`/`AZURE_SUBSCRIPTION_ID` repository variables are set — all three matrix legs currently share that one subscription. The `ci-terraform` gate job always runs and is the check to require in branch protection — path filtering is at the job level (not the workflow trigger) precisely so the required check always reports.
 - **cd-tag**: auto-creates a semver tag on every merge to `main` (default bump: patch)
 
 ## GitHub repo settings
 
-`scripts/protect-branch.sh` (run via `make protect-branch`, args:
-`BRANCH=<name>` default `main`, `CHECKS="<space-separated contexts>"` —
-**required**, no default, since it depends on whatever CI workflows the
-consuming repo actually runs, not this template's) sets the platform settings
-that can't live in files: repo-level auto-merge (required for
+`scripts/protect-branch.sh` (run via `make protect-branch`, args: `BRANCH=<name>`
+default `main`, `CHECKS="<newline-separated contexts>"` defaulting to this
+template's own two checks, `pre-commit / Pre-commit` and `ci-terraform` — see
+the Makefile's `CHECKS` default and the script's usage comment; override for
+a consuming repo whose CI workflows differ. Newline-, not space-, separated
+because a context name can itself contain spaces, e.g. the reusable-workflow
+context above) sets the platform settings that can't live in files: repo-level
+auto-merge (required for
 `renovate.json`'s `platformAutomerge`), delete-branch-on-merge, and a ruleset
 on the target branch requiring the given status checks and 1 approving review
 (`APPROVALS_REQUIRED` to override), with the Renovate GitHub App (looked up

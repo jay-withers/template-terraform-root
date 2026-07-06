@@ -25,7 +25,7 @@ Run `make` (or `make help`) to list the available targets:
 
 ```bash
 make install           # install pre-commit hooks (run once after cloning)
-make protect-branch    # configure GitHub repo settings (auto-merge, branch protection) — CHECKS="..." required
+make protect-branch    # configure GitHub repo settings (auto-merge, branch protection) — override CHECKS if your repo's checks differ
 make lint              # run all pre-commit hooks against every file
 make fmt               # terraform fmt -recursive
 make validate          # terraform init + validate
@@ -148,7 +148,7 @@ the GitHub API. Run, with the [`gh` CLI](https://cli.github.com) authenticated
 as an account with admin rights on the new repo:
 
 ```bash
-make protect-branch CHECKS="pre-commit ci-terraform"
+make protect-branch
 ```
 
 This runs `scripts/protect-branch.sh` and is idempotent (safe to re-run). It:
@@ -166,14 +166,21 @@ This runs `scripts/protect-branch.sh` and is idempotent (safe to re-run). It:
   a clean replace rather than an accumulation of stale rulesets — don't run
   it against a repo that has unrelated rulesets you want to keep.
 
-`CHECKS` is **required** — there's no sane default, since it depends on
-whatever CI workflows *your* repo runs, not this template's. For this repo's
-own workflows that's `"pre-commit ci-terraform"`:
+`CHECKS` defaults to this template's own two required status check contexts —
+override it if your repo's CI workflows differ. It's a **newline-separated**
+list, not space-separated, since a context name can itself contain spaces
+(e.g. `make protect-branch CHECKS="$(printf 'foo\nbar')"`):
 
-- **ci-pre-commit** — `pre-commit` job
-- **ci-terraform** — the `ci-terraform` gate job (always runs and reports even
+- `pre-commit / Pre-commit` — ci-pre-commit's `pre-commit` job calls a
+  reusable workflow, so the context it reports is `<caller job id> /
+  <reusable job name>`, not the bare job id. Requiring the bare `pre-commit`
+  leaves the check "Expected" forever.
+- `ci-terraform` — the `ci-terraform` gate job (always runs and reports even
   when a PR has no Terraform changes — do **not** require `test`/`plan`
-  directly, require this gate instead)
+  directly, require this gate instead). This one is still a plain inline job,
+  not a reusable-workflow call, so its context is just its job id.
+
+Confirm the exact context names for your repo's workflows with `gh pr checks`.
 
 ## Structure
 
