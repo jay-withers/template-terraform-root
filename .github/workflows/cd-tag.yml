@@ -10,4 +10,4 @@ jobs:
   tag:
     permissions:
       contents: write
-    uses: jay-withers/template-pipelines/.github/workflows/release.yml@bd8296ab9460020813f69f39c9b8e5080cf1b674 # 0.1.1
+    uses: jay-withers/template-pipelines/.github/workflows/release.yml@bd8296ab9460020813f69f39c9b8e5080cf1b674 # v0.2.1
