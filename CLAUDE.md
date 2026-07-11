@@ -121,10 +121,18 @@ because a context name can itself contain spaces, e.g. the reusable-workflow
 context above) sets the platform settings that can't live in files: repo-level
 auto-merge (required for
 `renovate.json`'s `platformAutomerge`), delete-branch-on-merge, and a ruleset
-on the target branch requiring the given status checks and 1 approving review
-(`APPROVALS_REQUIRED` to override), with the Renovate GitHub App (looked up
-via `gh api apps/renovate`) and the repo Admin role (built-in `RepositoryRole`
-actor_id 5) exempted as `bypass_mode: always` bypass actors on both rules. It
-deletes every ruleset already on the repo before creating this one, so re-runs
-replace rather than accumulate — it uses `gh api` and is otherwise idempotent
-(safe to re-run after renaming the repo or reinstalling Renovate).
+on the target branch requiring the given status checks and an approving
+review count that defaults to 1 for an organization-owned repo but 0 for a
+user-owned one (`APPROVALS_REQUIRED` to override; the script looks up owner
+type via `gh api users/<owner>`), with the Renovate GitHub App (looked up via
+`gh api apps/renovate`) and the repo Admin role (built-in `RepositoryRole`
+actor_id 5) exempted as `bypass_mode: always` bypass actors on both rules.
+The 0-review default on user-owned repos exists because GitHub only honors
+ruleset `bypass_actors` on organization-owned repos — on a personal repo the
+Renovate exemption is silently ignored, so a nonzero required-review count
+would block Renovate's own auto-merge forever with no fix short of a separate
+auto-approve app (e.g. Mend's renovate-approve); status checks and the block
+on direct pushes still apply either way. It deletes every ruleset already on
+the repo before creating this one, so re-runs replace rather than accumulate
+— it uses `gh api` and is otherwise idempotent (safe to re-run after renaming
+the repo or reinstalling Renovate).
