@@ -57,7 +57,21 @@ runs both the generic `terraform` ruleset and the `azurerm` ruleset
 (`terraform-linters/tflint-ruleset-azurerm`) for azurerm-specific rules. That
 plugin's `version = "..."` pin has its own Renovate regex manager in
 `renovate.json` (scoped to `.tflint.hcl`) since it's not a GitHub Action, pip
-package, or download URL any of the other managers already cover.
+package, or download URL any of the shared presets already cover.
+
+`renovate.json` extends the shared presets from
+[`jay-withers/template-renovate`](https://github.com/jay-withers/template-renovate)
+(`github>jay-withers/template-renovate`) rather than configuring Renovate
+inline — that one line pulls in `config:recommended`, semantic commits,
+automerge/schedule policy, and per-ecosystem grouping (docker, github-actions,
+terraform, npm, pre-commit). Only what's genuinely specific to this repo
+stays local: `autoApprove` (needed so Renovate's own PRs clear the
+branch-protection review requirement) and the two `regexManagers` above
+(`.terraform-version`, `.tflint.hcl`'s azurerm plugin pin) — neither is a
+GitHub Action, npm/pip package, or Docker image any shared preset's manager
+already covers. Change ecosystem-wide policy (grouping, schedule, automerge)
+in `template-renovate` itself so every consuming repo picks it up; only touch
+this file for something unique to this module.
 
 Azure-side deletion protection (`prevent_deletion_if_contains_resources`) is a
 provider `features` block setting, not a resource attribute, so it can't live
@@ -121,10 +135,18 @@ because a context name can itself contain spaces, e.g. the reusable-workflow
 context above) sets the platform settings that can't live in files: repo-level
 auto-merge (required for
 `renovate.json`'s `platformAutomerge`), delete-branch-on-merge, and a ruleset
-on the target branch requiring the given status checks and 1 approving review
-(`APPROVALS_REQUIRED` to override), with the Renovate GitHub App (looked up
-via `gh api apps/renovate`) and the repo Admin role (built-in `RepositoryRole`
-actor_id 5) exempted as `bypass_mode: always` bypass actors on both rules. It
-deletes every ruleset already on the repo before creating this one, so re-runs
-replace rather than accumulate — it uses `gh api` and is otherwise idempotent
-(safe to re-run after renaming the repo or reinstalling Renovate).
+on the target branch requiring the given status checks and an approving
+review count that defaults to 1 for an organization-owned repo but 0 for a
+user-owned one (`APPROVALS_REQUIRED` to override; the script looks up owner
+type via `gh api users/<owner>`), with the Renovate GitHub App (looked up via
+`gh api apps/renovate`) and the repo Admin role (built-in `RepositoryRole`
+actor_id 5) exempted as `bypass_mode: always` bypass actors on both rules.
+The 0-review default on user-owned repos exists because GitHub only honors
+ruleset `bypass_actors` on organization-owned repos — on a personal repo the
+Renovate exemption is silently ignored, so a nonzero required-review count
+would block Renovate's own auto-merge forever with no fix short of a separate
+auto-approve app (e.g. Mend's renovate-approve); status checks and the block
+on direct pushes still apply either way. It deletes every ruleset already on
+the repo before creating this one, so re-runs replace rather than accumulate
+— it uses `gh api` and is otherwise idempotent (safe to re-run after renaming
+the repo or reinstalling Renovate).

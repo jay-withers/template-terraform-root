@@ -159,12 +159,21 @@ This runs `scripts/protect-branch.sh` and is idempotent (safe to re-run). It:
 - Enables **delete branch on merge**, so merged Renovate branches don't pile up.
 - Deletes every ruleset currently on the repo, then creates a fresh one on the
   target branch (default `main`, override with `BRANCH=<name>`) requiring the
-  given status checks and 1 approving review before merge (override with
-  `APPROVALS_REQUIRED`), with the Renovate GitHub App and the repo **Admin**
-  role exempted as bypass actors on both, so Renovate's automerge and admin
-  self-merges aren't blocked waiting on a second approver. This makes re-runs
-  a clean replace rather than an accumulation of stale rulesets — don't run
-  it against a repo that has unrelated rulesets you want to keep.
+  given status checks and an approving review count before merge that
+  defaults to 1 for an organization-owned repo but 0 for a user-owned one
+  (override with `APPROVALS_REQUIRED`), with the Renovate GitHub App and the
+  repo **Admin** role exempted as bypass actors on both, so Renovate's
+  automerge and admin self-merges aren't blocked waiting on a second
+  approver. This makes re-runs a clean replace rather than an accumulation of
+  stale rulesets — don't run it against a repo that has unrelated rulesets
+  you want to keep.
+
+  The 0-review default on user-owned repos exists because GitHub only honors
+  ruleset bypass actors on organization-owned repos — on a personal repo the
+  Renovate exemption is silently ignored, so a nonzero required-review count
+  would block Renovate's own auto-merge forever (short of installing a
+  separate auto-approve app, e.g. Mend's `renovate-approve`). Status checks
+  and the block on direct pushes still apply either way.
 
 `CHECKS` defaults to this template's own two required status check contexts —
 override it if your repo's CI workflows differ. It's a **newline-separated**
